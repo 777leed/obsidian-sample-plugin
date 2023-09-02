@@ -1,25 +1,6 @@
-import { App, Modal, Plugin, PluginSettingTab, Setting, MarkdownView } from 'obsidian';
-import { ExecException, exec } from 'child_process';
+import { App, Modal, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import * as fs from 'fs';
 import * as path from 'path';
-
-
-function runPythonScript(inputWavPath: any, callback: (arg0: ExecException | null, arg1: string | null) => void) {
-  const pythonScriptPath = "C:/Users/hp/Downloads/LeedMakesStuff/whisper/cmdwhisper.py";
-  const command = `python "${pythonScriptPath}" --input "${inputWavPath}"`;
-
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error('Error executing Python script:', error);
-      callback(error, null);
-      return;
-    }
-
-    // Capture the Python script's output
-    const output = stdout.trim();
-    callback(null, output);
-  });
-}
 
 interface MyPluginSettings {
   mySetting: string;
@@ -101,7 +82,6 @@ class RecordingModal extends Modal {
             mediaRecorder.onstop = async () => {
               const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
               this.saveAudioToFile(audioBlob); // Save audio to file
-              
             };
             mediaRecorder.start();
           })
@@ -117,15 +97,6 @@ class RecordingModal extends Modal {
     contentEl.empty();
   }
 
-  async insertText(text: any) {
-    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (activeView) {
-      const editor = activeView.editor;
-      // Insert the Markdown at the current cursor position in the note
-      await editor.replaceSelection(text);
-    }
-  }
-
   async saveAudioToFile(audioBlob: Blob) {
     const desktopDirectory = 'C:\\Users\\hp\\Desktop';  // Change this to your desired directory
     const audioFilePath = path.join(desktopDirectory, 'recorded-audio.wav');
@@ -134,36 +105,12 @@ class RecordingModal extends Modal {
       const audioBuffer = Buffer.from(await audioBlob.arrayBuffer());
       fs.writeFileSync(audioFilePath, audioBuffer);
       this.contentEl.createEl('p').setText('Recording saved to desktop.');
-
-      runPythonScript('C:/Users/hp/Desktop/recorded-audio.wav', (error, output) => {
-        if (error) {
-          console.error('Error running Python script:', error);
-          this.contentEl.createEl('p').setText("error script V");
-          this.insertText(error.message)
-          // Handle the error, if needed
-          return;
-        }
-
-        // Use the output as needed
-        // console.log('Python script output:', output);
-        this.insertText(output)
-        this.contentEl.createEl('p').setText('NO ERROR');
-
-        
-        // You can update your UI with the output or perform any other action
-      });
-
     } catch (error) {
       console.error('Error saving audio:', error);
       this.contentEl.createEl('p').setText('Error saving recording.');
     }
   }
-
-  
-
-  
 }
-
 
 class SampleSettingTab extends PluginSettingTab {
   plugin: MyPlugin;
